@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>EASY PDF HUB – upload & convert</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root{--accent:#0066ff;--light:#f9fafb}
+    body{margin:0;font-family:Inter,system-ui;background:#fff;display:flex;align-items:center;justify-content:center;height:100vh}
+    .card{background:#fff;border-radius:1rem;box-shadow:0 4px 24px rgba(0,0,0,.08);padding:2.5rem 3rem;text-align:center;max-width:420px}
+    h1{font-size:1.8rem;margin-bottom:.25rem}
+    p{color:#6b7280;margin-bottom:2rem}
+    button{background:var(--accent);color:#fff;border:none;padding:.9rem 2.2rem;border-radius:.5rem;font-weight:600;cursor:pointer}
+    button:disabled{opacity:.5;cursor:not-allowed}
+    .spinner{display:none;margin:1rem auto;width:36px;height:36px;border:3px solid #eee;border-top:3px solid var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Upload HTML to PDF</h1>
+    <p>Select your file, we’ll convert it server-side and trigger the download.</p>
+
+    <input id="fileInput" type="file" accept=".html,.htm" hidden>
+    <button id="pickBtn">Choose HTML file</button>
+    <div class="spinner" id="spinner"></div>
+  </div>
+
+  <script>
+    const fileInput = document.getElementById('fileInput');
+    const pickBtn   = document.getElementById('pickBtn');
+    const spinner   = document.getElementById('spinner');
+
+    pickBtn.onclick = () => fileInput.click();
+
+    fileInput.onchange = async () => {
+      const file = fileInput.files[0];
+      if (!file) return;
+
+      pickBtn.style.display = 'none';
+      spinner.style.display  = 'block';
+
+      try {
+        const body = new FormData();
+        body.append('htmlFile', file);
+
+        const res = await fetch('/convert', { method: 'POST', body });
+        if (!res.ok) throw new Error('Conversion failed');
+
+        const blob = await res.blob();
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href     = url;
+        a.download = file.name.replace(/\.html?$/i, '.pdf');
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+      } catch (err) {
+        alert('Error: ' + err.message);
+      } finally {
+        spinner.style.display  = 'none';
+        pickBtn.style.display  = 'inline-block';
+        fileInput.value = '';
+      }
+    };
+  </script>
+</body>
+</html>
